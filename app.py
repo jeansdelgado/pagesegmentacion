@@ -19,7 +19,7 @@ También incluye comentarios sobre la instalación opcional de `accelerate` y `b
 """
 
 import sys
-!{sys.executable} -m pip install -q transformers datasets sentence-transformers faiss-cpu langchain-google-genai langchain-community gradio
+#!{sys.executable} -m pip install -q transformers datasets sentence-transformers faiss-cpu langchain-google-genai langchain-community gradio
 
 # Optional: Install accelerate and bitsandbytes for faster inference and quantization with large models
 # !{sys.executable} -m pip install -q accelerate bitsandbytes
