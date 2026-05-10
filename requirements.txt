@@ -1,4 +1,5 @@
 # Dependencias principales de LangChain y Google AI
+google-generativeai
 langchain
 langchain-google-genai
 langchain-community
