@@ -18,7 +18,7 @@ Este bloque de código se encarga de instalar las dependencias necesarias para c
 También incluye comentarios sobre la instalación opcional de `accelerate` y `bitsandbytes`, que son útiles para optimizar el rendimiento y el uso de memoria con modelos más grandes. Al final, imprime un mensaje de confirmación cuando todas las dependencias se han instalado.
 """
 
-import sys
+#import sys
 #!{sys.executable} -m pip install -q transformers datasets sentence-transformers faiss-cpu langchain-google-genai langchain-community gradio
 
 # Optional: Install accelerate and bitsandbytes for faster inference and quantization with large models
