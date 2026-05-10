@@ -100,7 +100,8 @@ Aquí configuraremos el modelo de embeddings de Google Gemini y crearemos una ba
 """
 
 import google.generativeai as genai
-from google.colab import userdata
+import os
+#from google.colab import userdata
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -108,7 +109,8 @@ from langchain_core.documents import Document
 from bs4 import BeautifulSoup
 
 # Obtener la clave API de los secretos de Colab
-GOOGLE_API_KEY = userdata.get('GEMINI_API_KEY')
+#GOOGLE_API_KEY = userdata.get('GEMINI_API_KEY')
+GOOGLE_API_KEY = os.environ.get('GOOGLE_API_KEY')
 
 # Configurar la API de Gemini
 genai.configure(api_key=GOOGLE_API_KEY)
