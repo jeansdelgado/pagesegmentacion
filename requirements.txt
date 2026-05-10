@@ -1,0 +1,23 @@
+# Dependencias principales de LangChain y Google AI
+langchain
+langchain-google-genai
+langchain-community
+
+# Motor de base de datos vectorial
+faiss-cpu
+
+# Procesamiento de modelos y embeddings
+sentence-transformers
+transformers
+datasets
+
+# Interfaz de usuario
+gradio
+
+# Utilidades para Web Scraping (usadas en tu app)
+beautifulsoup4
+requests
+
+# Dependencias de soporte
+pandas
+numpy
