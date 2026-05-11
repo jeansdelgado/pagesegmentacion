@@ -18,13 +18,7 @@ Este bloque de código se encarga de instalar las dependencias necesarias para c
 También incluye comentarios sobre la instalación opcional de `accelerate` y `bitsandbytes`, que son útiles para optimizar el rendimiento y el uso de memoria con modelos más grandes. Al final, imprime un mensaje de confirmación cuando todas las dependencias se han instalado.
 """
 
-#import sys
-#!{sys.executable} -m pip install -q transformers datasets sentence-transformers faiss-cpu langchain-google-genai langchain-community gradio
 
-# Optional: Install accelerate and bitsandbytes for faster inference and quantization with large models
-# !{sys.executable} -m pip install -q accelerate bitsandbytes
-
-print("✅ Dependencias instaladas")
 
 """### Descarga y Preparación de Documentos
 
@@ -111,6 +105,7 @@ from bs4 import BeautifulSoup
 # Obtener la clave API de los secretos de Colab
 #GOOGLE_API_KEY = userdata.get('GEMINI_API_KEY')
 GOOGLE_API_KEY = os.environ.get('GOOGLE_API_KEY')
+
 
 # Configurar la API de Gemini
 genai.configure(api_key=GOOGLE_API_KEY)
@@ -199,11 +194,11 @@ A continuación, se muestra el código para realizar esta operación.
 # 1. Definir nuevas URLs y segmentos (ejemplo)
 new_pages_to_download = [
     {
-        "url": "https://www.digitel.com.ve/conocenos/nuestra-empresa",
+        "url": "https://grupo77.com.ve/advantages.html",
         "segments": ["Corporativo", "Historia"]
     },
     {
-        "url": "https://www.digitel.com.ve/telefonia/prepago",
+        "url": "https://grupo77.com.ve/contact.html",
         "segments": ["Personas", "Prepago"]
     }
 ]
@@ -302,7 +297,6 @@ import gradio as gr
 import requests
 from bs4 import BeautifulSoup
 import google.generativeai as genai
-from google.colab import userdata
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
 from langchain_community.vectorstores import FAISS
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -311,7 +305,8 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 import re # For URL validation
-
+import os
+api_key = os.environ.get('GOOGLE_API_KEY')
 # New import for zero-shot classification
 from transformers import pipeline
 
@@ -324,9 +319,10 @@ segments_options_list = ["Personas", "Emprendedores", "Pymes", "Negocios", "Pyme
 
 # Default pages data for the Gradio Dataframe (modified to remove segments column)
 default_pages_data_for_df_for_ui = [
-    ["https://www.digitel.com.ve/"],
-    ["https://www.digitel.com.ve/pymes"],
-    ["https://www.digitel.com.ve/empresas"]
+    ["https://grupo77.com.ve/about_us.html"],
+    ["https://grupo77.com.ve/products.html"],
+    ["https://grupo77.com.ve/advantages.html"]
+    
 ]
 
 # Helper function to validate URLs
@@ -540,13 +536,13 @@ def clear_all():
     return [], "", userdata.get("GEMINI_API_KEY"), 0.2, "gemini-2.5-flash", default_pages_data_for_df_for_ui, ""
 
 # Gradio Interface
-with gr.Blocks(title="Chatbot comercial segmentado", theme=gr.themes.Soft()) as demo:
+with gr.Blocks(title="Chatbot comercial segmentado") as demo:
     gr.Markdown("# 📈 Chatbot comercial segmentado")
     gr.Markdown("Una app sencilla para atención segmentada")
 
     with gr.Sidebar():
         gr.Markdown("### ⚙️ Configuración")
-        gemini_api_key_input = gr.Textbox(label="API Key de Gemini", type="password", info="Introduce tu API Key de Google Gemini.", value=userdata.get("GEMINI_API_KEY"))
+        gemini_api_key_input = gr.Textbox(label="API Key de Gemini", type="password", info="Introduce tu API Key de Google Gemini.", value=os.environ.get("GEMINI_API_KEY", ""))
         temperature_slider = gr.Slider(minimum=0, maximum=1, step=0.1, value=0.2, label="Temperatura", info="Controla la creatividad del modelo (0=más predecible, 1=más creativo).")
         gr.Markdown("[Obtener API Key](https://aistudio.google.com/api-keys)")
 
@@ -569,7 +565,7 @@ with gr.Blocks(title="Chatbot comercial segmentado", theme=gr.themes.Soft()) as 
         value="gemini-2.5-flash",
         info="Elige el modelo Gemini para generar respuestas."
     )
-    chatbot = gr.Chatbot(label="Chat", type='messages', allow_tags=False)
+    chatbot = gr.Chatbot(label="Chat")
 
     # Group message input and submit button in a row for better responsiveness
     with gr.Row():
@@ -618,5 +614,8 @@ with gr.Blocks(title="Chatbot comercial segmentado", theme=gr.themes.Soft()) as 
         ]
     )
 
-demo.launch(debug=True, share=False)
+
+
+if __name__ == "__main__":
+    demo.launch(server_name="0.0.0.0", show_error=True)
 
