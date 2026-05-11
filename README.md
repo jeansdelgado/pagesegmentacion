@@ -118,6 +118,8 @@ Link a la app desplegada: Hugging Face Spaces
 📸 Captura de pantallas
 (Nota: Las imágenes deben estar presentes en el repositorio en las rutas indicadas o subidas localmente).
 
-Interfaz principal: ![Screenshot 1](https://raw.githubusercontent.com/jeansdelgado/pagesegmentacion/main/screenshot1.png)
+Interfaz principal: ![Screenshot 1]
+<img width="975" height="445" alt="image" src="https://github.com/user-attachments/assets/38bf5109-4b4b-4027-b007-c790c59bfffa" />
+Respuesta segmentada: ![Screenshot 2]
+<img width="975" height="459" alt="image" src="https://github.com/user-attachments/assets/f9908c86-af6e-4697-b3aa-df4c8a1d155d" />
 
-Respuesta segmentada: ![Screenshot 2](https://raw.githubusercontent.com/jeansdelgado/pagesegmentacion/main/screenshot2.png)
