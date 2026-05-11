@@ -1,3 +1,4 @@
+---
 title: Segmentacion
 emoji: 🏢
 colorFrom: blue
@@ -8,6 +9,9 @@ python_version: '3.13'
 app_file: app.py
 pinned: false
 license: unknown
+---
+Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
+
 ---
 readme_content = """# Chatbot Comercial Segmentado con RAG 🚀
 
