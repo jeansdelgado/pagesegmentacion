@@ -28,270 +28,7 @@ Vamos a descargar el contenido HTML de las URLs proporcionadas y asignaremos los
 import requests
 from bs4 import BeautifulSoup
 
-# Define the pages and their corresponding segments
-pages_to_download = [
-    {
-        "url": "https://www.digitel.com.ve/",
-        "segments": ["Personas", "Emprendedores"]
-    },
-    {
-        "url": "https://www.digitel.com.ve/pymes",
-        "segments": ["Pymes", "Negocios", "Pyme Social"]
-    },
-    {
-        "url": "https://www.digitel.com.ve/empresas",
-        "segments": ["Empresas", "Gobiernos", "Carrier"]
-    }
-]
 
-# List to store the downloaded documents
-documentos = [] # Cambiado 'documents' a 'documentos' para coincidir con la solicitud de 'bloque de código [1]'
-
-print("Iniciando descarga de documentos...")
-
-try:
-    for page_info in pages_to_download:
-        url = page_info["url"]
-        segments = page_info["segments"]
-
-        try:
-            response = requests.get(url, timeout=10)
-            response.raise_for_status() # Raise an HTTPError for bad responses (4xx or 5xx)
-            html_content = response.text
-
-            # Optional: You might want to parse the HTML to get only visible text
-            # soup = BeautifulSoup(html_content, 'html.parser')
-            # text_content = soup.get_text(separator=' ', strip=True)
-
-            documentos.append({
-                "url": url,
-                "segments": segments,
-                "html_content": html_content,
-                # "text_content": text_content # if you decide to extract text
-            })
-
-            print(f"✅ Descargado {url} (Longitud HTML: {len(html_content)} caracteres) - Segmentos: {', '.join(segments)}")
-
-        except requests.exceptions.RequestException as e:
-            print(f"❌ Error al descargar {url}: {e}")
-
-except Exception as e:
-    print(f"❌ Un error inesperado ocurrió durante el procesamiento: {e}")
-finally:
-    print("\n--- Descarga de documentos completada ---")
-    # Print the trace (summary of downloaded documents)
-    print("\n--- Traza de Documentos Descargados ---")
-    for doc in documentos:
-        print(f"URL: {doc['url']}")
-        print(f"  Segmentos: {', '.join(doc['segments'])}")
-        print(f"  Longitud HTML: {len(doc['html_content'])} caracteres\n")
-
-    print(f"Total de documentos procesados: {len(documentos)}")
-
-"""### Configuración de Embeddings y Creación de Base de Datos Vectorial
-
-Aquí configuraremos el modelo de embeddings de Google Gemini y crearemos una base de datos vectorial FAISS con los documentos procesados.
-"""
-
-import google.generativeai as genai
-import os
-#from google.colab import userdata
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from langchain_community.vectorstores import FAISS
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_core.documents import Document
-from bs4 import BeautifulSoup
-
-# Obtener la clave API de los secretos de Colab
-#GOOGLE_API_KEY = userdata.get('GEMINI_API_KEY')
-GOOGLE_API_KEY = os.environ.get('GOOGLE_API_KEY')
-
-
-# Configurar la API de Gemini
-genai.configure(api_key=GOOGLE_API_KEY)
-
-print("✅ API de Google Gemini configurada.")
-
-# Inicializar el modelo de embeddings
-embeddings_model = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001", google_api_key=GOOGLE_API_KEY)
-
-print("✅ Modelo de embeddings inicializado: models/gemini-embedding-001")
-
-"""#### Procesamiento de Documentos para Embeddings
-
-Antes de crear los embeddings, necesitamos extraer el texto plano de los documentos HTML y dividirlos en fragmentos más pequeños para un procesamiento eficiente.
-"""
-
-processed_docs = []
-text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=1000,  # Tamaño de cada fragmento de texto
-    chunk_overlap=200 # Superposición entre fragmentos para mantener el contexto
-)
-
-print("Extrayendo texto y creando objetos Document...")
-try:
-    for doc_info in documentos: # Changed 'documents' to 'documentos' to match variable name
-        html_content = doc_info['html_content']
-        url = doc_info['url']
-        segments = doc_info['segments']
-
-        soup = BeautifulSoup(html_content, 'html.parser')
-        text_content = soup.get_text(separator=' ', strip=True)
-
-        # Crear un objeto Document de Langchain con los metadatos
-        langchain_doc = Document(
-            page_content=text_content,
-            metadata={
-                "source": url,
-                "segments": segments
-            }
-        )
-        processed_docs.append(langchain_doc)
-        print(f"✅ Procesando documento desde: {url} con segmentos: {', '.join(segments)}")
-
-    # Dividir los documentos en chunks
-    chunks = text_splitter.split_documents(processed_docs)
-
-    print(f"✅ Documentos procesados. Total de chunks creados: {len(chunks)}")
-    if chunks:
-        print("Primer chunk de ejemplo:")
-        print(chunks[0].page_content[:200] + "...")
-        print(f"Metadatos del primer chunk: {chunks[0].metadata}")
-    else:
-        print("No se crearon chunks.")
-
-except Exception as e:
-    print(f"❌ Un error ocurrió durante el procesamiento de documentos: {e}")
-finally:
-    print("--- Proceso de extracción y chunking finalizado ---")
-
-
-
-"""#### Creación de la Base de Datos Vectorial FAISS
-
-Ahora, utilizaremos los chunks de texto y el modelo de embeddings para crear la base de datos vectorial FAISS. Esta base de datos nos permitirá buscar fragmentos de texto relevantes de manera eficiente.
-"""
-
-# Crear la base de datos vectorial FAISS
-vector_db = FAISS.from_documents(chunks, embeddings_model)
-
-print("✅ Base de datos vectorial FAISS creada con éxito.")
-print(f"Número de vectores en la base de datos: {vector_db.index.ntotal}")
-
-"""### Añadir Nuevos Documentos a la Base de Datos Vectorial Existente
-
-Si deseas actualizar tu base de datos vectorial FAISS con nuevos documentos sin reconstruirla desde cero, puedes seguir estos pasos:
-
-1.  **Definir las nuevas URLs y segmentos** (si aplica).
-2.  **Descargar y extraer el contenido** HTML/texto de estas URLs.
-3.  **Dividir el nuevo contenido en chunks**.
-4.  **Generar embeddings** para estos nuevos chunks utilizando el mismo modelo de embeddings.
-5.  **Añadir los nuevos chunks (y sus embeddings) a la base de datos** `vector_db` existente.
-
-A continuación, se muestra el código para realizar esta operación.
-"""
-
-# 1. Definir nuevas URLs y segmentos (ejemplo)
-new_pages_to_download = [
-    {
-        "url": "https://grupo77.com.ve/advantages.html",
-        "segments": ["Corporativo", "Historia"]
-    },
-    {
-        "url": "https://grupo77.com.ve/contact.html",
-        "segments": ["Personas", "Prepago"]
-    }
-]
-
-# Lista para almacenar los nuevos documentos descargados
-new_documentos = []
-
-print("Iniciando descarga de NUEVOS documentos...")
-
-try:
-    for page_info in new_pages_to_download:
-        url = page_info["url"]
-        segments = page_info["segments"]
-
-        try:
-            response = requests.get(url, timeout=10)
-            response.raise_for_status() # Raise an HTTPError for bad responses (4xx or 5xx)
-            html_content = response.text
-
-            new_documentos.append({
-                "url": url,
-                "segments": segments,
-                "html_content": html_content,
-            })
-
-            print(f"✅ Descargado {url} (Longitud HTML: {len(html_content)} caracteres) - Segmentos: {', '.join(segments)}")
-
-        except requests.exceptions.RequestException as e:
-            print(f"❌ Error al descargar {url}: {e}")
-
-except Exception as e:
-    print(f"❌ Un error inesperado ocurrió durante el procesamiento de nuevos documentos: {e}")
-finally:
-    print("\n--- Descarga de nuevos documentos completada ---")
-    print(f"Total de nuevos documentos procesados: {len(new_documentos)}")
-
-"""#### Procesamiento de Nuevos Documentos para Embeddings
-
-Similar a como se hizo con los documentos originales, extraemos el texto plano de los nuevos documentos HTML y los dividimos en fragmentos.
-"""
-
-# 3. y 4. Extraer texto, crear objetos Document y dividir en chunks para los nuevos documentos
-new_processed_docs = []
-
-print("Extrayendo texto y creando objetos Document para nuevos documentos...")
-try:
-    for doc_info in new_documentos:
-        html_content = doc_info['html_content']
-        url = doc_info['url']
-        segments = doc_info['segments']
-
-        soup = BeautifulSoup(html_content, 'html.parser')
-        text_content = soup.get_text(separator=' ', strip=True)
-
-        # Crear un objeto Document de Langchain con los metadatos
-        langchain_doc = Document(
-            page_content=text_content,
-            metadata={
-                "source": url,
-                "segments": segments
-            }
-        )
-        new_processed_docs.append(langchain_doc)
-        print(f"✅ Procesando nuevo documento desde: {url} con segmentos: {', '.join(segments)}")
-
-    # Dividir los nuevos documentos en chunks
-    new_chunks = text_splitter.split_documents(new_processed_docs)
-
-    print(f"✅ Nuevos documentos procesados. Total de nuevos chunks creados: {len(new_chunks)}")
-    if new_chunks:
-        print("Primer nuevo chunk de ejemplo:")
-        print(new_chunks[0].page_content[:200] + "...")
-        print(f"Metadatos del primer nuevo chunk: {new_chunks[0].metadata}")
-    else:
-        print("No se crearon nuevos chunks.")
-
-except Exception as e:
-    print(f"❌ Un error ocurrió durante el procesamiento de nuevos documentos: {e}")
-finally:
-    print("--- Proceso de extracción y chunking de nuevos documentos finalizado ---")
-
-"""#### Actualización de la Base de Datos Vectorial FAISS
-
-Finalmente, añadimos los embeddings de los nuevos chunks a la base de datos `vector_db` existente.
-"""
-
-# 5. Añadir los nuevos chunks a la base de datos FAISS existente
-if new_chunks:
-    vector_db.add_documents(new_chunks)
-    print("✅ Nuevos documentos añadidos a la base de datos vectorial FAISS con éxito.")
-    print(f"Número total de vectores en la base de datos ahora: {vector_db.index.ntotal}")
-else:
-    print("No hay nuevos chunks para añadir a la base de datos FAISS.")
 
 import gradio as gr
 import requests
@@ -306,7 +43,8 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 import re # For URL validation
 import os
-api_key = os.environ.get('GOOGLE_API_KEY')
+api_key = os.environ.get("GOOGLE_API_KEY")
+GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 # New import for zero-shot classification
 from transformers import pipeline
 
@@ -321,8 +59,11 @@ segments_options_list = ["Personas", "Emprendedores", "Pymes", "Negocios", "Pyme
 default_pages_data_for_df_for_ui = [
     ["https://grupo77.com.ve/about_us.html"],
     ["https://grupo77.com.ve/products.html"],
-    ["https://grupo77.com.ve/advantages.html"]
-    
+    ["https://grupo77.com.ve/advantages.html"],
+    ["https://grupo77.com.ve/news.html"],
+    ["https://grupo77.com.ve/contact.html"],
+    ["https://es.tva-automotive.com/"],
+    ["https://www.tva-automotive.com/"]  
 ]
 
 # Helper function to validate URLs
@@ -343,9 +84,9 @@ def rag_chat(api_key, temperature, selected_model, pages_data_list, chat_history
     """
     progress(0, desc="Iniciando...")
 
-    if not api_key:
-        return chat_history + [{'role': 'user', 'content': user_question}, {'role': 'assistant', 'content': "⚠️ Por favor, introduce tu API Key de Gemini en la barra lateral."}] , "⚠️ Por favor, introduce tu API Key de Gemini en la barra lateral.", ""
-
+    if not api_key or api_key == "":
+    # Intentamos obtener primero GOOGLE_API_KEY
+            api_key = os.environ.get("GOOGLE_API_KEY")
     # Configure Gemini API
     try:
         genai.configure(api_key=api_key)
@@ -533,7 +274,7 @@ def rag_chat(api_key, temperature, selected_model, pages_data_list, chat_history
     return chat_history, executive_response, "" # Return updated history, formatted response, and clear user input
 
 def clear_all():
-    return [], "", userdata.get("GEMINI_API_KEY"), 0.2, "gemini-2.5-flash", default_pages_data_for_df_for_ui, ""
+    return [], "", os.environ.get('GOOGLE_API_KEY'), 0.2, "gemini-2.5-flash", default_pages_data_for_df_for_ui, ""
 
 # Gradio Interface
 with gr.Blocks(title="Chatbot comercial segmentado") as demo:
@@ -560,7 +301,7 @@ with gr.Blocks(title="Chatbot comercial segmentado") as demo:
 
     # Main Chatbot interface
     model_selector = gr.Radio(
-        ["gemini-2.5-flash", "gemini-3.0-flash"], # Gemini 3.0 Flash is not yet public, but kept as per request for future-proofing
+        ["gemini-2.5-flash"], # Gemini 3.0 Flash is not yet public, but kept as per request for future-proofing
         label="Seleccionar Modelo",
         value="gemini-2.5-flash",
         info="Elige el modelo Gemini para generar respuestas."
